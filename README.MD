@@ -92,52 +92,49 @@ SOURCE database/03_views_procedures.sql;
 cd python
 pip install -r requirements.txt
 cp .env.example .env
-# Modifica .env con le tue chiavi API
+Modifica .env con le tue chiavi API
 
-Step 3 — Primo avvio
+### Step 3 — Primo avvio
 cd python
 python main.py
 
-Step 4 — Interfaccia Web
+### Step 4 — Interfaccia Web
 Apri: http://localhost/OddsLab/php/
 Registrati o accedi con: demo / test123
 
-🔑 API Keys Necessarie
+## 🔑 API Keys Necessarie
 Servizio	    URL	                        Piano
 The Odds API	https://the-odds-api.com	Free (500 req/mese)
 OpenAI	        https://platform.openai.com	Pay-per-use (~€0.01/report)
 
-📊 Funzionalità Principali
-🔍 Value Bet Finder
+## 📊 Funzionalità Principali
+#### 🔍 Value Bet Finder
 Confronta la probabilità calcolata dal modello con la probabilità implicita
 delle quote. Se (prob_modello × quota) - 1 > 2%, segnala una Value Bet.
 
-🧮 Kelly Criterion
+#### 🧮 Kelly Criterion
 Calcola automaticamente quanto puntare in base al vantaggio trovato:
 f* = (p × b - 1) / (b - 1)
 
 Con safety cap al 10% e supporto per Full/Half/Quarter Kelly.
 
-📈 Modello Poisson (Calcio)
+#### 📈 Modello Poisson (Calcio)
 Usa la distribuzione di Poisson per calcolare la probabilità di ogni
 risultato possibile, basandosi sulle medie gol fatti/subiti delle squadre.
 
-🎾 Modello Elo (Tennis / 1v1)
+#### 🎾 Modello Elo (Tennis / 1v1)
 Sistema di rating che predice la probabilità di vittoria basandosi
 sulla differenza di punteggio Elo tra i due giocatori.
 
-🤖 Report IA
+#### 🤖 Report IA
 OpenAI GPT-4o-mini analizza i dati statistici e genera un report
 pre-match di 250 parole che spiega perché una scommessa è una Value Bet.
 
-📸 Screenshot
--- foto
-
-👤 Autore
-[Karaj Klindi]
+#### 👤 Autore
+Karaj Klindi
 Classe 5ª Informatica — ITI F. Severi
 Anno Scolastico 2025/2026
 
-📄 Licenza
+#### 📄 Licenza
 Progetto realizzato per il "Capolavoro" della piattaforma UNICA.
 Tutti i diritti riservati.
