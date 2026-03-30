@@ -1,0 +1,39 @@
+# ============================================
+# OddsLab — Git Ignore
+# ============================================
+
+# ----- Chiavi e Segreti -----
+.env
+python/.env
+
+# ----- Python -----
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# ----- IDE -----
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ----- Log -----
+cron/logs/
+*.log
+
+# ----- Database dump -----
+*.sql.gz
+*.dump
+
+# ----- OS -----
+.DS_Store
+Desktop.ini
