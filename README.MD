@@ -83,7 +83,6 @@ OddsLab/
 - pip (gestore pacchetti Python)
 
 ### Step 1 — Database
-```sql
 -- Apri phpMyAdmin o terminale MySQL
 SOURCE database/01_ddl.sql;
 SOURCE database/02_seed_data.sql;
