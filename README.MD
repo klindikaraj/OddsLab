@@ -24,6 +24,7 @@ confrontandole con modelli statistici proprietari. Il sistema:
 ---
 
 ## 🏗️ Architettura
+```
 ┌──────────────────┐       ┌──────────────────┐     ┌──────────────────┐
 │ The Odds API     │────▶ │ Python Engine    │────▶│ MySQL Database   │
 │ (Quote Live)     │       │ - Poisson        │     │ (10 tabelle)     │
@@ -39,7 +40,7 @@ confrontandole con modelli statistici proprietari. Il sistema:
 │ - Bet Tracker    │
 │ - Bankroll Mgmt  │
 └──────────────────┘
-
+```
 
 ---
 
@@ -57,6 +58,7 @@ confrontandole con modelli statistici proprietari. Il sistema:
 ---
 
 ## 📁 Struttura Progetto
+```
 OddsLab/
 ├── database/ SQL: DDL, seed, viste
 ├── python/
@@ -72,6 +74,7 @@ OddsLab/
 │ └── assets/ CSS, JS, immagini
 ├── cron/ Script automazione
 └── docs/ Documentazione progetto
+```
 
 ---
 
