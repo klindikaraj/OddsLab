@@ -87,19 +87,24 @@ OddsLab/
 
 ### Step 1 — Database
 -- Apri phpMyAdmin o terminale MySQL
+```
 SOURCE database/01_ddl.sql;
 SOURCE database/02_seed_data.sql;
 SOURCE database/03_views_procedures.sql;
+```
 
 ### Step 2 — Python
+```
 cd python
 pip install -r requirements.txt
 cp .env.example .env
 Modifica .env con le tue chiavi API
-
+```
 ### Step 3 — Primo avvio
+```
 cd python
 python main.py
+```
 
 ### Step 4 — Interfaccia Web
 Apri: http://localhost/OddsLab/php/
