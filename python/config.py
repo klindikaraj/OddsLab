@@ -26,6 +26,7 @@ OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', '')
 
 # --- Impostazioni App ---
 SUPPORTED_SPORTS = [
+    # ===== CALCIO =====
     {
         'api_key':  'soccer_italy_serie_a',
         'nome':     'Serie A',
@@ -50,6 +51,17 @@ SUPPORTED_SPORTS = [
         'icona':    '⚽',
         'modello':  'poisson'
     },
+
+    # ===== TENNIS =====
+    {
+        'api_key':  'tennis_wta_charleston_open',
+        'nome':     'WTA Charleston Open',
+        'sport':    'Tennis',
+        'paese':    'Internazionale',
+        'icona':    '🎾',
+        'modello':  'elo'
+    },
+    # Tornei futuri (si attiveranno quando iniziano)
     {
         'api_key':  'tennis_atp_french_open',
         'nome':     'ATP French Open',
@@ -58,6 +70,32 @@ SUPPORTED_SPORTS = [
         'icona':    '🎾',
         'modello':  'elo'
     },
+    {
+        'api_key':  'tennis_atp_wimbledon',
+        'nome':     'ATP Wimbledon',
+        'sport':    'Tennis',
+        'paese':    'Internazionale',
+        'icona':    '🎾',
+        'modello':  'elo'
+    },
+    {
+        'api_key':  'tennis_atp_us_open',
+        'nome':     'ATP US Open',
+        'sport':    'Tennis',
+        'paese':    'Internazionale',
+        'icona':    '🎾',
+        'modello':  'elo'
+    },
+    {
+        'api_key':  'tennis_atp_aus_open',
+        'nome':     'ATP Australian Open',
+        'sport':    'Tennis',
+        'paese':    'Internazionale',
+        'icona':    '🎾',
+        'modello':  'elo'
+    },
+
+    # ===== BASKET =====
     {
         'api_key':  'basketball_nba',
         'nome':     'NBA',

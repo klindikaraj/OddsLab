@@ -24,22 +24,23 @@ confrontandole con modelli statistici proprietari. Il sistema:
 ---
 
 ## 🏗️ Architettura
+```
 ┌──────────────────┐       ┌──────────────────┐     ┌──────────────────┐
 │ The Odds API     │────▶ │ Python Engine    │────▶│ MySQL Database   │
 │ (Quote Live)     │       │ - Poisson        │     │ (10 tabelle)     │
-│ │ │ - Elo Rating │       │                  │
+│                  │       │ - Elo Rating     │     │                  │
 │ OpenAI API       │────▶ │ - Kelly          │     │                  │
 │ (Report IA)      │       │ - Value Finder   │     │                  │
 └──────────────────┘       └──────────────────┘     └────────┬─────────┘
-         │
-┌────────▼─────────┐
-│ PHP Frontend     │
-│ - Dashboard      │
-│ - Value Bets     │
-│ - Bet Tracker    │
-│ - Bankroll Mgmt  │
-└──────────────────┘
-
+                                                             │
+                                                    ┌────────▼─────────┐
+                                                    │ PHP Frontend     │
+                                                    │ - Dashboard      │
+                                                    │ - Value Bets     │
+                                                    │ - Bet Tracker    │
+                                                    │ - Bankroll Mgmt  │
+                                                    └──────────────────┘
+```
 
 ---
 
@@ -57,6 +58,7 @@ confrontandole con modelli statistici proprietari. Il sistema:
 ---
 
 ## 📁 Struttura Progetto
+```
 OddsLab/
 ├── database/ SQL: DDL, seed, viste
 ├── python/
@@ -72,6 +74,7 @@ OddsLab/
 │ └── assets/ CSS, JS, immagini
 ├── cron/ Script automazione
 └── docs/ Documentazione progetto
+```
 
 ---
 
@@ -84,28 +87,35 @@ OddsLab/
 
 ### Step 1 — Database
 -- Apri phpMyAdmin o terminale MySQL
+```
 SOURCE database/01_ddl.sql;
 SOURCE database/02_seed_data.sql;
 SOURCE database/03_views_procedures.sql;
+```
 
 ### Step 2 — Python
+```
 cd python
 pip install -r requirements.txt
 cp .env.example .env
 Modifica .env con le tue chiavi API
-
+```
 ### Step 3 — Primo avvio
+```
 cd python
 python main.py
+```
 
 ### Step 4 — Interfaccia Web
 Apri: http://localhost/OddsLab/php/
+
 Registrati o accedi con: demo / test123
 
 ## 🔑 API Keys Necessarie
-Servizio	    URL	                        Piano
-The Odds API	https://the-odds-api.com	Free (500 req/mese)
-OpenAI	        https://platform.openai.com	Pay-per-use (~€0.01/report)
+| Servizio | URL | Piano |
+|---|---|---|
+| **The Odds API** | https://the-odds-api.com | Free (500 req/mese) |
+| **OpenAI** | https://platform.openai.com | Pay-per-use (~€0.01/report) |
 
 ## 📊 Funzionalità Principali
 #### 🔍 Value Bet Finder
@@ -114,6 +124,7 @@ delle quote. Se (prob_modello × quota) - 1 > 2%, segnala una Value Bet.
 
 #### 🧮 Kelly Criterion
 Calcola automaticamente quanto puntare in base al vantaggio trovato:
+
 f* = (p × b - 1) / (b - 1)
 
 Con safety cap al 10% e supporto per Full/Half/Quarter Kelly.
