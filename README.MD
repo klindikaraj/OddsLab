@@ -113,6 +113,7 @@ Registrati o accedi con: demo / test123
 
 ## 🔑 API Keys Necessarie
 | Servizio | URL | Piano |
+|---|---|---|
 | **The Odds API** | https://the-odds-api.com | Free (500 req/mese) |
 | **OpenAI** | https://platform.openai.com | Pay-per-use (~€0.01/report) |
 
