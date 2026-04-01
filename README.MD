@@ -32,14 +32,14 @@ confrontandole con modelli statistici proprietari. Il sistema:
 │ OpenAI API       │────▶ │ - Kelly          │     │                  │
 │ (Report IA)      │       │ - Value Finder   │     │                  │
 └──────────────────┘       └──────────────────┘     └────────┬─────────┘
-         │
-┌────────▼─────────┐
-│ PHP Frontend     │
-│ - Dashboard      │
-│ - Value Bets     │
-│ - Bet Tracker    │
-│ - Bankroll Mgmt  │
-└──────────────────┘
+                                                             │
+                                                    ┌────────▼─────────┐
+                                                    │ PHP Frontend     │
+                                                    │ - Dashboard      │
+                                                    │ - Value Bets     │
+                                                    │ - Bet Tracker    │
+                                                    │ - Bankroll Mgmt  │
+                                                    └──────────────────┘
 ```
 
 ---
