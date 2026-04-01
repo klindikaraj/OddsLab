@@ -108,6 +108,7 @@ python main.py
 
 ### Step 4 — Interfaccia Web
 Apri: http://localhost/OddsLab/php/
+
 Registrati o accedi con: demo / test123
 
 ## 🔑 API Keys Necessarie
@@ -122,6 +123,7 @@ delle quote. Se (prob_modello × quota) - 1 > 2%, segnala una Value Bet.
 
 #### 🧮 Kelly Criterion
 Calcola automaticamente quanto puntare in base al vantaggio trovato:
+
 f* = (p × b - 1) / (b - 1)
 
 Con safety cap al 10% e supporto per Full/Half/Quarter Kelly.
