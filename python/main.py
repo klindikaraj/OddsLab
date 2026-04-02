@@ -26,6 +26,7 @@ from models.poisson_model import PoissonModel
 from models.elo_model import EloModel
 from models.value_finder import ValueFinder
 from ai.report_generator import ReportGenerator
+from settle_bets import settle_all_bets
 
 
 def setup_sport_and_league(sport_config: dict) -> tuple[int, int]:
@@ -233,6 +234,12 @@ def step_update_results() -> None:
         except Exception as e:
             print(f"  ❌ Errore: {e}")
             continue
+
+    # Aggiorna scommesse utenti e bankroll in base ai risultati
+    print("\n" + "=" * 60)
+    print("💰 STEP 5b: SETTLE BETS & BANKROLL")
+    print("=" * 60)
+    settle_all_bets()
 
 
 def print_summary() -> None:

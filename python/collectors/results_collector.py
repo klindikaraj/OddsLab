@@ -42,89 +42,89 @@ class ResultsCollector:
         print(f"[API] Trovati {len(scores)} risultati")
         return scores
 
-        def update_results(self, scores: list[dict[str, Any]]) -> dict[str, int]:
-            """Aggiorna le partite nel DB con i risultati reali."""
-            stats: dict[str, int] = {
-                'aggiornate': 0,
-                'non_trovate': 0,
-                'gia_aggiornate': 0
-            }
+    def update_results(self, scores: list[dict[str, Any]]) -> dict[str, int]:
+        """Aggiorna le partite nel DB con i risultati reali."""
+        stats: dict[str, int] = {
+            'aggiornate': 0,
+            'non_trovate': 0,
+            'gia_aggiornate': 0
+        }
 
-            for score in scores:
-                if not score.get('completed'):
-                    continue
+        for score in scores:
+            if not score.get('completed'):
+                continue
 
-                partita: Optional[dict] = DB.fetch_one(
-                    """SELECT id, stato FROM partite
-                    WHERE api_event_id = %s""",
-                    (score['id'],)
+            partita: Optional[dict] = DB.fetch_one(
+                """SELECT id, stato FROM partite
+                WHERE api_event_id = %s""",
+                (score['id'],)
+            )
+
+            if partita is None:
+                stats['non_trovate'] += 1
+                continue
+
+            if partita['stato'] == 'conclusa':
+                stats['gia_aggiornate'] += 1
+                continue
+
+            score_home: Optional[int] = None
+            score_away: Optional[int] = None
+
+            if score.get('scores') and len(score['scores']) >= 2:
+                for s in score['scores']:
+                    if s['name'] == score['home_team']:
+                        score_home = int(s['score'])
+                    elif s['name'] == score['away_team']:
+                        score_away = int(s['score'])
+
+            # Se non abbiamo i punteggi ma il match è completato,
+            # determina il vincitore dal fatto che è "completed"
+            if score_home is None or score_away is None:
+                # Per tennis/MMA: il match è completato,
+                # usiamo score 1-0 per il vincitore
+                if score.get('completed') and score.get('scores'):
+                    try:
+                        scores_list = score['scores']
+                        if len(scores_list) >= 2:
+                            s1 = int(scores_list[0].get('score', 0))
+                            s2 = int(scores_list[1].get('score', 0))
+
+                            if scores_list[0]['name'] == score['home_team']:
+                                score_home = s1
+                                score_away = s2
+                            else:
+                                score_home = s2
+                                score_away = s1
+                    except (ValueError, KeyError, IndexError):
+                        # Non riusciamo a parsare → skip
+                        continue
+
+            if score_home is not None and score_away is not None:
+                partita_id = int(partita['id'])
+
+                DB.execute(
+                    """UPDATE partite
+                    SET stato = 'conclusa',
+                        score_casa = %s,
+                        score_trasferta = %s
+                    WHERE id = %s""",
+                    (score_home, score_away, partita_id)
                 )
 
-                if partita is None:
-                    stats['non_trovate'] += 1
-                    continue
+                self._settle_value_bets(
+                    partita_id, score_home, score_away
+                )
 
-                if partita['stato'] == 'conclusa':
-                    stats['gia_aggiornate'] += 1
-                    continue
+                stats['aggiornate'] += 1
+                print(
+                    f"  ✅ Aggiornata partita #{partita_id}: "
+                    f"{score['home_team']} {score_home} - "
+                    f"{score_away} {score['away_team']}"
+                )
 
-                score_home: Optional[int] = None
-                score_away: Optional[int] = None
-
-                if score.get('scores') and len(score['scores']) >= 2:
-                    for s in score['scores']:
-                        if s['name'] == score['home_team']:
-                            score_home = int(s['score'])
-                        elif s['name'] == score['away_team']:
-                            score_away = int(s['score'])
-
-                # Se non abbiamo i punteggi ma il match è completato,
-                # determina il vincitore dal fatto che è "completed"
-                if score_home is None or score_away is None:
-                    # Per tennis/MMA: il match è completato,
-                    # usiamo score 1-0 per il vincitore
-                    if score.get('completed') and score.get('scores'):
-                        try:
-                            scores_list = score['scores']
-                            if len(scores_list) >= 2:
-                                s1 = int(scores_list[0].get('score', 0))
-                                s2 = int(scores_list[1].get('score', 0))
-
-                                if scores_list[0]['name'] == score['home_team']:
-                                    score_home = s1
-                                    score_away = s2
-                                else:
-                                    score_home = s2
-                                    score_away = s1
-                        except (ValueError, KeyError, IndexError):
-                            # Non riusciamo a parsare → skip
-                            continue
-
-                if score_home is not None and score_away is not None:
-                    partita_id = int(partita['id'])
-
-                    DB.execute(
-                        """UPDATE partite
-                        SET stato = 'conclusa',
-                            score_casa = %s,
-                            score_trasferta = %s
-                        WHERE id = %s""",
-                        (score_home, score_away, partita_id)
-                    )
-
-                    self._settle_value_bets(
-                        partita_id, score_home, score_away
-                    )
-
-                    stats['aggiornate'] += 1
-                    print(
-                        f"  ✅ Aggiornata partita #{partita_id}: "
-                        f"{score['home_team']} {score_home} - "
-                        f"{score_away} {score['away_team']}"
-                    )
-
-            print(f"[Results] Riepilogo: {stats}")
-            return stats
+        print(f"[Results] Riepilogo: {stats}")
+        return stats
 
     def _settle_value_bets(self, partita_id: int,
                            score_home: int,
