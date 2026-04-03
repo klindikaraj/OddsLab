@@ -9,6 +9,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 from typing import Any, Optional
+from datetime import datetime, timezone
 
 import requests
 
@@ -42,6 +43,34 @@ class ResultsCollector:
         print(f"[API] Trovati {len(scores)} risultati")
         return scores
 
+    @staticmethod
+    def _is_finished(score: dict[str, Any]) -> bool:
+        """
+        Considera una partita finita se:
+        1. L'API dice completed=True, OPPURE
+        2. Il commence_time è nel passato E i punteggi sono presenti.
+        (Il piano free di The Odds API ritarda il flag completed.)
+        """
+        if score.get('completed'):
+            return True
+
+        commence_time = score.get('commence_time', '')
+        if not commence_time:
+            return False
+
+        try:
+            # Parsa il timestamp ISO8601 dall'API (es. "2026-04-01T19:35:00Z")
+            dt = datetime.fromisoformat(
+                commence_time.replace('Z', '+00:00')
+            )
+            now = datetime.now(timezone.utc)
+            # Considera finita se iniziata da più di 2 ore e ha punteggi
+            elapsed_hours = (now - dt).total_seconds() / 3600
+            has_scores = bool(score.get('scores'))
+            return elapsed_hours > 2 and has_scores
+        except (ValueError, TypeError):
+            return False
+
     def update_results(self, scores: list[dict[str, Any]]) -> dict[str, int]:
         """Aggiorna le partite nel DB con i risultati reali."""
         stats: dict[str, int] = {
@@ -51,12 +80,11 @@ class ResultsCollector:
         }
 
         for score in scores:
-            if not score.get('completed'):
+            if not self._is_finished(score):
                 continue
 
             partita: Optional[dict] = DB.fetch_one(
-                """SELECT id, stato FROM partite
-                WHERE api_event_id = %s""",
+                "SELECT id, stato FROM partite WHERE api_event_id = %s",
                 (score['id'],)
             )
 
@@ -71,57 +99,55 @@ class ResultsCollector:
             score_home: Optional[int] = None
             score_away: Optional[int] = None
 
-            if score.get('scores') and len(score['scores']) >= 2:
-                for s in score['scores']:
+            scores_list = score.get('scores') or []
+
+            # Prova prima con corrispondenza per nome
+            for s in scores_list:
+                try:
                     if s['name'] == score['home_team']:
                         score_home = int(s['score'])
                     elif s['name'] == score['away_team']:
                         score_away = int(s['score'])
+                except (ValueError, KeyError):
+                    continue
 
-            # Se non abbiamo i punteggi ma il match è completato,
-            # determina il vincitore dal fatto che è "completed"
+            # Fallback: prendi i primi due punteggi in ordine
+            if (score_home is None or score_away is None) and len(scores_list) >= 2:
+                try:
+                    s0_name  = scores_list[0]['name']
+                    s0_score = int(scores_list[0]['score'])
+                    s1_score = int(scores_list[1]['score'])
+                    if s0_name == score['home_team']:
+                        score_home, score_away = s0_score, s1_score
+                    else:
+                        score_home, score_away = s1_score, s0_score
+                except (ValueError, KeyError, IndexError):
+                    pass
+
             if score_home is None or score_away is None:
-                # Per tennis/MMA: il match è completato,
-                # usiamo score 1-0 per il vincitore
-                if score.get('completed') and score.get('scores'):
-                    try:
-                        scores_list = score['scores']
-                        if len(scores_list) >= 2:
-                            s1 = int(scores_list[0].get('score', 0))
-                            s2 = int(scores_list[1].get('score', 0))
+                print(f"  ⚠️  Punteggi non parsabili per: "
+                      f"{score.get('home_team')} vs {score.get('away_team')}")
+                continue
 
-                            if scores_list[0]['name'] == score['home_team']:
-                                score_home = s1
-                                score_away = s2
-                            else:
-                                score_home = s2
-                                score_away = s1
-                    except (ValueError, KeyError, IndexError):
-                        # Non riusciamo a parsare → skip
-                        continue
+            partita_id = int(partita['id'])
 
-            if score_home is not None and score_away is not None:
-                partita_id = int(partita['id'])
+            DB.execute(
+                """UPDATE partite
+                   SET stato = 'conclusa',
+                       score_casa = %s,
+                       score_trasferta = %s
+                   WHERE id = %s""",
+                (score_home, score_away, partita_id)
+            )
 
-                DB.execute(
-                    """UPDATE partite
-                    SET stato = 'conclusa',
-                        score_casa = %s,
-                        score_trasferta = %s
-                    WHERE id = %s""",
-                    (score_home, score_away, partita_id)
-                )
+            self._settle_value_bets(partita_id, score_home, score_away)
 
-                self._settle_value_bets(
-                    partita_id, score_home, score_away
-                )
-
-                stats['aggiornate'] += 1
-                print(
-                    f"  ✅ Aggiornata partita #{partita_id}: "
-                    f"{score['home_team']} {score_home} - "
-                    f"{score_away} {score['away_team']}"
-                )
+            stats['aggiornate'] += 1
+            print(
+                f"  ✅ Aggiornata partita #{partita_id}: "
+                f"{score['home_team']} {score_home} - "
+                f"{score_away} {score['away_team']}"
+            )
 
         print(f"[Results] Riepilogo: {stats}")
         return stats
@@ -145,10 +171,8 @@ class ResultsCollector:
 
         for vb in value_bets:
             nuovo_stato = 'won' if vb['esito'] == esito_reale else 'lost'
-
             DB.execute(
-                """UPDATE value_bets SET stato = %s
-                   WHERE id = %s""",
+                "UPDATE value_bets SET stato = %s WHERE id = %s",
                 (nuovo_stato, int(vb['id']))
             )
 
@@ -180,8 +204,7 @@ class ResultsCollector:
                      END) AS avg_subiti,
                      COUNT(*) AS partite_giocate
                    FROM partite
-                   WHERE (squadra_casa_id = %s
-                          OR squadra_trasf_id = %s)
+                   WHERE (squadra_casa_id = %s OR squadra_trasf_id = %s)
                      AND stato = 'conclusa'""",
                 (sid, sid, sid, sid, sid, sid)
             )
@@ -189,28 +212,29 @@ class ResultsCollector:
             if (stats_row is not None
                     and stats_row['partite_giocate'] is not None
                     and int(stats_row['partite_giocate']) >= 3):
-                avg_fatti = float(stats_row['avg_fatti'] or 0)
-                avg_subiti = float(stats_row['avg_subiti'] or 0)
-
                 DB.execute(
                     """UPDATE squadre
                        SET gol_fatti_avg = %s,
                            gol_subiti_avg = %s
                        WHERE id = %s""",
-                    (round(avg_fatti, 2), round(avg_subiti, 2), sid)
+                    (round(float(stats_row['avg_fatti'] or 0), 2),
+                     round(float(stats_row['avg_subiti'] or 0), 2),
+                     sid)
                 )
 
-        print(f"[Stats] Aggiornate statistiche "
-              f"per {len(squadre)} squadre")
+        print(f"[Stats] Aggiornate statistiche per {len(squadre)} squadre")
 
 
 # --- Test standalone ---
 if __name__ == '__main__':
     collector = ResultsCollector()
-    scores = collector.get_scores('soccer_italy_serie_a', days_from=3)
+    scores = collector.get_scores('tennis_wta_charleston_open', days_from=3)
     for s in scores:
-        status = "✅" if s.get('completed') else "⏳"
+        finished = ResultsCollector._is_finished(s)
         print(
-            f"  {status} {s['home_team']} vs {s['away_team']} "
-            f"| {s.get('scores', 'N/A')}"
+            f"  {'✅' if finished else '⏳'} "
+            f"{s['home_team']} vs {s['away_team']} "
+            f"| completed={s.get('completed')} "
+            f"| scores={s.get('scores')} "
+            f"| commence={s.get('commence_time')}"
         )
