@@ -8,7 +8,7 @@ Uso:
     python main.py --predict    → solo previsioni
     python main.py --find       → solo ricerca value bets
     python main.py --report     → solo generazione report
-    python main.py --results    → solo aggiornamento risultati (API-Sports)
+    python main.py --results    → solo aggiornamento risultati
 """
 
 from __future__ import annotations
@@ -30,24 +30,16 @@ from settle_bets import settle_all_bets
 
 
 def setup_sport_and_league(sport_config: dict) -> tuple[int, int]:
-    """
-    Assicura che sport e campionato esistano nel DB.
-    Ritorna (sport_id, campionato_id).
-    """
     sport_row: Optional[dict] = DB.fetch_one(
         "SELECT id FROM sport WHERE nome = %s",
         (sport_config['sport'],)
     )
-
     if sport_row is not None:
         sport_id: int = int(sport_row['id'])
     else:
         sport_id = DB.execute(
-            """INSERT INTO sport (nome, api_key, icona)
-               VALUES (%s, %s, %s)""",
-            (sport_config['sport'],
-             sport_config['sport'].lower(),
-             sport_config['icona'])
+            "INSERT INTO sport (nome, api_key, icona) VALUES (%s, %s, %s)",
+            (sport_config['sport'], sport_config['sport'].lower(), sport_config['icona'])
         )
         print(f"  🆕 Sport creato: {sport_config['sport']} (ID: {sport_id})")
 
@@ -55,18 +47,12 @@ def setup_sport_and_league(sport_config: dict) -> tuple[int, int]:
         "SELECT id FROM campionati WHERE api_key = %s",
         (sport_config['api_key'],)
     )
-
     if camp_row is not None:
         camp_id: int = int(camp_row['id'])
     else:
         camp_id = DB.execute(
-            """INSERT INTO campionati
-               (sport_id, nome, paese, api_key)
-               VALUES (%s, %s, %s, %s)""",
-            (sport_id,
-             sport_config['nome'],
-             sport_config['paese'],
-             sport_config['api_key'])
+            "INSERT INTO campionati (sport_id, nome, paese, api_key) VALUES (%s, %s, %s, %s)",
+            (sport_id, sport_config['nome'], sport_config['paese'], sport_config['api_key'])
         )
         print(f"  🆕 Campionato creato: {sport_config['nome']} (ID: {camp_id})")
 
@@ -84,9 +70,7 @@ def step_collect() -> None:
     for sport_cfg in SUPPORTED_SPORTS:
         print(f"\n{sport_cfg['icona']} {sport_cfg['nome']} ({sport_cfg['paese']})")
         print("-" * 40)
-
         sport_id, camp_id = setup_sport_and_league(sport_cfg)
-
         try:
             events = collector.get_odds(sport_cfg['api_key'])
             if events:
@@ -107,43 +91,34 @@ def step_predict() -> None:
     print("=" * 60)
 
     poisson = PoissonModel()
-    elo = EloModel()
+    elo     = EloModel()
 
     partite: list[dict] = DB.fetch_all(
-        """SELECT
-             p.id,
-             p.squadra_casa_id,
-             p.squadra_trasf_id,
-             p.campionato_id,
-             sc.nome AS casa,
-             st.nome AS trasferta,
-             c.api_key AS camp_api_key
+        """SELECT p.id, p.squadra_casa_id, p.squadra_trasf_id,
+                  p.campionato_id, sc.nome AS casa, st.nome AS trasferta,
+                  c.api_key AS camp_api_key
            FROM partite p
            JOIN squadre sc ON p.squadra_casa_id = sc.id
            JOIN squadre st ON p.squadra_trasf_id = st.id
            JOIN campionati c ON p.campionato_id = c.id
            LEFT JOIN previsioni pr ON p.id = pr.partita_id
-           WHERE p.stato = 'programmata'
-             AND p.data_ora > NOW()
-             AND pr.id IS NULL
+           WHERE p.stato = 'programmata' AND p.data_ora > NOW() AND pr.id IS NULL
            ORDER BY p.data_ora ASC"""
     )
 
     print(f"\n📋 {len(partite)} partite da analizzare\n")
 
     for match in partite:
-        match_id: int = int(match['id'])
-        casa_id: int = int(match['squadra_casa_id'])
-        trasf_id: int = int(match['squadra_trasf_id'])
-        camp_id: int = int(match['campionato_id'])
-        camp_api: str = str(match['camp_api_key'])
-
+        match_id = int(match['id'])
+        casa_id  = int(match['squadra_casa_id'])
+        trasf_id = int(match['squadra_trasf_id'])
+        camp_id  = int(match['campionato_id'])
+        camp_api = str(match['camp_api_key'])
         print(f"⚽ {match['casa']} vs {match['trasferta']} (#{match_id})")
 
-        sport_cfg_match: Optional[dict] = next(
+        sport_cfg_match = next(
             (s for s in SUPPORTED_SPORTS if s['api_key'] == camp_api), None
         )
-
         if sport_cfg_match and sport_cfg_match['modello'] == 'elo':
             prediction = elo.predict(casa_id, trasf_id, camp_id)
             elo.save_prediction(match_id, prediction)
@@ -157,9 +132,7 @@ def step_find_value() -> list[dict]:
     print("\n" + "=" * 60)
     print("🔍 STEP 3: RICERCA VALUE BETS")
     print("=" * 60)
-
-    finder = ValueFinder()
-    return finder.find_all_pending()
+    return ValueFinder().find_all_pending()
 
 
 def step_generate_reports(value_bets: Optional[list[dict]] = None) -> None:
@@ -169,39 +142,34 @@ def step_generate_reports(value_bets: Optional[list[dict]] = None) -> None:
     print("=" * 60)
 
     generator = ReportGenerator()
-
     partite: list[dict] = DB.fetch_all(
-        """SELECT DISTINCT vb.partita_id,
-                  sc.nome AS casa,
-                  st.nome AS trasferta
+        """SELECT DISTINCT vb.partita_id, sc.nome AS casa, st.nome AS trasferta
            FROM value_bets vb
            JOIN partite p ON vb.partita_id = p.id
            JOIN squadre sc ON p.squadra_casa_id = sc.id
            JOIN squadre st ON p.squadra_trasf_id = st.id
            LEFT JOIN report_ia r ON vb.partita_id = r.partita_id
-           WHERE vb.stato = 'pending'
-             AND r.id IS NULL"""
+           WHERE vb.stato = 'pending' AND r.id IS NULL"""
     )
 
     print(f"\n📝 {len(partite)} report da generare\n")
-
     for match in partite:
-        p_id: int = int(match['partita_id'])
+        p_id = int(match['partita_id'])
         print(f"📄 Report per: {match['casa']} vs {match['trasferta']}")
-        report: str = generator.generate(p_id)
+        report = generator.generate(p_id)
         print(f"  ✅ Generato ({len(report)} caratteri)\n")
 
 
 def step_update_results() -> None:
-    """STEP 5: Aggiorna risultati via API-Sports + settle bets."""
+    """STEP 5: Aggiorna risultati (football-data.org + balldontlie.io) + settle bets."""
     print("\n" + "=" * 60)
-    print("📊 STEP 5: AGGIORNAMENTO RISULTATI (API-Sports)")
+    print("📊 STEP 5: AGGIORNAMENTO RISULTATI")
     print("=" * 60)
 
     results_collector = ResultsCollector()
 
     for sport_cfg in SUPPORTED_SPORTS:
-        if not sport_cfg.get('apisports_type'):
+        if not sport_cfg.get('results_provider'):
             continue
 
         print(f"\n{sport_cfg['icona']} {sport_cfg['nome']}")
@@ -209,13 +177,11 @@ def step_update_results() -> None:
 
         try:
             _, camp_id = setup_sport_and_league(sport_cfg)
-
             results_collector.update_sport(
                 sport_cfg=sport_cfg,
                 campionato_id=camp_id,
                 days_back=7,
             )
-
             results_collector.update_team_stats(camp_id)
 
         except Exception as e:
@@ -231,27 +197,24 @@ def step_update_results() -> None:
 
 
 def print_summary() -> None:
-    """Stampa un riepilogo dello stato attuale."""
     print("\n" + "=" * 60)
     print("📊 RIEPILOGO ODDSLAB")
     print("=" * 60)
 
-    partite_tot: int = DB.count("SELECT COUNT(*) AS n FROM partite")
-    partite_fut: int = DB.count(
-        "SELECT COUNT(*) AS n FROM partite WHERE stato='programmata' AND data_ora>NOW()"
-    )
-    n_quote: int   = DB.count("SELECT COUNT(*) AS n FROM quote")
-    n_prev: int    = DB.count("SELECT COUNT(*) AS n FROM previsioni")
-    vb_attive: int = DB.count("SELECT COUNT(*) AS n FROM value_bets WHERE stato='pending'")
-    vb_tot: int    = DB.count("SELECT COUNT(*) AS n FROM value_bets")
-    n_report: int  = DB.count("SELECT COUNT(*) AS n FROM report_ia")
+    n_partite = DB.count("SELECT COUNT(*) AS n FROM partite")
+    n_future  = DB.count("SELECT COUNT(*) AS n FROM partite WHERE stato='programmata' AND data_ora>NOW()")
+    n_quote   = DB.count("SELECT COUNT(*) AS n FROM quote")
+    n_prev    = DB.count("SELECT COUNT(*) AS n FROM previsioni")
+    n_vb_att  = DB.count("SELECT COUNT(*) AS n FROM value_bets WHERE stato='pending'")
+    n_vb_tot  = DB.count("SELECT COUNT(*) AS n FROM value_bets")
+    n_report  = DB.count("SELECT COUNT(*) AS n FROM report_ia")
 
-    print(f"  {'Partite Totali':.<35} {partite_tot}")
-    print(f"  {'Partite Future':.<35} {partite_fut}")
+    print(f"  {'Partite Totali':.<35} {n_partite}")
+    print(f"  {'Partite Future':.<35} {n_future}")
     print(f"  {'Quote':.<35} {n_quote}")
     print(f"  {'Previsioni':.<35} {n_prev}")
-    print(f"  {'Value Bets Attive':.<35} {vb_attive}")
-    print(f"  {'Value Bets Totali':.<35} {vb_tot}")
+    print(f"  {'Value Bets Attive':.<35} {n_vb_att}")
+    print(f"  {'Value Bets Totali':.<35} {n_vb_tot}")
     print(f"  {'Report IA':.<35} {n_report}")
 
     top_vb: list[dict] = DB.fetch_all(
@@ -273,20 +236,17 @@ def print_summary() -> None:
         print(f"  {'Match':<30} {'Esito':<8} {'Quota':>6} {'Value':>7} {'Book':<15}")
         print(f"  {'-' * 70}")
         for vb in top_vb:
-            match_name = f"{vb['casa']} vs {vb['trasferta']}"
-            if len(match_name) > 28:
-                match_name = match_name[:28] + ".."
-            print(
-                f"  {match_name:<30} {str(vb['esito']):<8} "
-                f"{float(vb['valore_quota']):>6.2f} "
-                f"{float(vb['value_pct']):>6.1f}% "
-                f"{str(vb['bookmaker']):<15}"
-            )
+            mn = f"{vb['casa']} vs {vb['trasferta']}"
+            if len(mn) > 28:
+                mn = mn[:28] + ".."
+            print(f"  {mn:<30} {str(vb['esito']):<8} "
+                  f"{float(vb['valore_quota']):>6.2f} "
+                  f"{float(vb['value_pct']):>6.1f}% "
+                  f"{str(vb['bookmaker']):<15}")
     print()
 
 
 def main() -> None:
-    """Entry point principale."""
     parser = argparse.ArgumentParser(description='OddsLab — Value Bet Finder')
     parser.add_argument('--collect', action='store_true')
     parser.add_argument('--predict', action='store_true')
