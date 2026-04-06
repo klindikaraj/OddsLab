@@ -16,7 +16,7 @@ OddsLab è una piattaforma web che **identifica errori nelle quote dei bookmaker
 confrontandole con modelli statistici proprietari. Il sistema:
 
 1. **Raccoglie** quote in tempo reale da 20+ bookmaker tramite API
-2. **Calcola** la probabilità reale con modelli Poisson (calcio) ed Elo (tennis)
+2. **Calcola** la probabilità reale con modelli Poisson (calcio) ed Elo (basket)
 3. **Trova** le Value Bets — scommesse dove il bookmaker paga più del dovuto
 4. **Suggerisce** quanto puntare con il **Criterio di Kelly**
 5. **Genera** report pre-match narrativi tramite **Intelligenza Artificiale** (OpenAI)
@@ -133,9 +133,9 @@ Con safety cap al 10% e supporto per Full/Half/Quarter Kelly.
 Usa la distribuzione di Poisson per calcolare la probabilità di ogni
 risultato possibile, basandosi sulle medie gol fatti/subiti delle squadre.
 
-#### 🎾 Modello Elo (Tennis / 1v1)
+#### 🏀 Modello Elo (Basket)
 Sistema di rating che predice la probabilità di vittoria basandosi
-sulla differenza di punteggio Elo tra i due giocatori.
+sulla differenza di punteggio Elo tra le due squadre.
 
 #### 🤖 Report IA
 OpenAI GPT-4o-mini analizza i dati statistici e genera un report
