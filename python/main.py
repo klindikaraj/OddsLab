@@ -114,14 +114,17 @@ def step_predict() -> None:
         trasf_id = int(match['squadra_trasf_id'])
         camp_id  = int(match['campionato_id'])
         camp_api = str(match['camp_api_key'])
-        print(f"⚽ {match['casa']} vs {match['trasferta']} (#{match_id})")
 
         sport_cfg_match = next(
             (s for s in SUPPORTED_SPORTS if s['api_key'] == camp_api), None
         )
+        icona = sport_cfg_match['icona'] if sport_cfg_match else '🏟️'
+
+        print(f"{icona} {match['casa']} vs {match['trasferta']} (#{match_id})")
+
         if sport_cfg_match and sport_cfg_match['modello'] == 'elo':
             prediction = elo.predict(casa_id, trasf_id, camp_id)
-            elo.save_prediction(match_id, prediction)
+            elo.save_prediction(match_id, prediction, icona=icona)
         else:
             prediction = poisson.predict(casa_id, trasf_id, camp_id)
             poisson.save_prediction(match_id, prediction)
