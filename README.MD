@@ -27,8 +27,8 @@ confrontandole con modelli statistici proprietari. Il sistema:
 ```
 ┌──────────────────┐       ┌──────────────────┐     ┌──────────────────┐
 │ The Odds API     │────▶ │ Python Engine    │────▶│ MySQL Database   │
-│ (Quote Live)     │       │ - Poisson        │     │ (10 tabelle)     │
-│                  │       │ - Elo Rating     │     │                  │
+│ (Quote Live)     │       │ - Poisson        │     │ (12 tabelle      │
+│                  │       │ - Elo Rating     │     │  2 viste)        │
 │ OpenAI API       │────▶ │ - Kelly          │     │                  │
 │ (Report IA)      │       │ - Value Finder   │     │                  │
 └──────────────────┘       └──────────────────┘     └────────┬─────────┘
