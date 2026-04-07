@@ -17,6 +17,10 @@ venv/
 dist/
 build/
 
+# ----- Script temporanei (debug/fix one-shot) -----
+python/diagnose.py
+python/fix_tennis.py
+
 # ----- IDE -----
 .vscode/
 .idea/
